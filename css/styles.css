@@ -24,6 +24,15 @@
   --green-wash:  #e3f2e9;
   --red-wash:    #fbe8e6;
 
+  /* Paleta cíclica para diferenciar planos nos gráficos — não usa vermelho/amarelo
+     porque essas cores já têm significado de status (cancelado/pendente).
+     6 cores: suporta os 4 planos padrão + folga para planos adicionais
+     antes de qualquer repetição. */
+  --plan-purple: #6c5ce7;
+  --plan-teal:   #0f8b8d;
+  --plan-brown:  #8a5a30;
+  --plan-slate:  #5b6b7c;
+
   --radius: 4px;
   --shell: 248px;
   --step: 200ms;
@@ -333,9 +342,12 @@ td.acts { text-align: right; white-space: nowrap; }
   transition: width var(--step) ease-out;
 }
 .bar-fill.p0 { background: var(--plate-blue); }
-.bar-fill.p1 { background: var(--plate-red); }
-.bar-fill.p2 { background: var(--plate-yellow); }
+.bar-fill.p1 { background: var(--plan-purple); }
+.bar-fill.p2 { background: var(--plan-teal); }
 .bar-fill.p3 { background: var(--plate-green); }
+.bar-fill.p4 { background: var(--plan-brown); }
+.bar-fill.p5 { background: var(--plan-slate); }
+.bar-fill.outros { background: var(--ink-faint); }
 
 /* ---------- Formulários ---------- */
 
@@ -412,9 +424,9 @@ td.acts { text-align: right; white-space: nowrap; }
 
 .banner {
   padding: 12px 16px;
-  border: 1px solid #f2ccc7;
-  background: var(--red-wash);
-  color: var(--plate-red);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
   border-radius: var(--radius);
   font-size: 14px;
   font-weight: 500;
@@ -424,6 +436,11 @@ td.acts { text-align: right; white-space: nowrap; }
   border-color: #c9d3fa;
   background: var(--blue-wash);
   color: var(--plate-blue);
+}
+.banner.is-warning {
+  border-color: #f2ccc7;
+  background: var(--red-wash);
+  color: var(--plate-red);
 }
 
 /* ---------- Modal ---------- */

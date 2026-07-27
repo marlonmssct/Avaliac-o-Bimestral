@@ -23,7 +23,7 @@ academia/
 │       └── logo.svg
 │
 ├── index.html
-├── db.json
+├── dbAcademia.json
 └── README.md
 ```
 
@@ -38,7 +38,7 @@ Pré-requisito: Node.js instalado.
 **1. Suba o back-end**
 
 ```bash
-npx json-server db.json --port 3000
+npx json-server dbAcademia.json --port 3000
 ```
 
 Deixe rodando. Endpoints: `/alunos`, `/planos`, `/matriculas`, `/pagamentos`.
@@ -121,7 +121,7 @@ Acesse o endereço indicado no terminal. O indicador no rodapé da barra lateral
 
 ## Regras exercitáveis nos dados de exemplo
 
-O `db.json` já vem com situações que cobrem os casos de borda:
+O `dbAcademia.json` já vem com situações que cobrem os casos de borda:
 
 - **Pagamento atrasado derivado** — o registro está gravado como `pendente`, mas aparece como atrasado na tela e na inadimplência.
 - **Dívida de matrícula cancelada** — a matrícula 6 está cancelada e ainda tem pagamento em aberto contando na inadimplência.

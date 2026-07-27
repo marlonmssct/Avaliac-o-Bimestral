@@ -169,6 +169,12 @@
       "nome": "Anual",
       "valorMensal": 99.9,
       "duracaoMeses": 12
+    },
+    {
+      "nome": "Bimestral",
+      "valorMensal": 139.9,
+      "duracaoMeses": 2,
+      "id": "aYFgi-Ukh3w"
     }
   ],
   "matriculas": [
@@ -236,13 +242,40 @@
       "id": "VVXzh5P2vjo"
     },
     {
-      "alunoId": "i9ZdWDn9Imc",
-      "planoId": null,
-      "nomePlanoSnapshot": "bimestral",
-      "valorMensalSnapshot": 100,
+      "alunoId": "8",
+      "planoId": "1",
+      "nomePlanoSnapshot": "Mensal",
+      "valorMensalSnapshot": 149.9,
       "dataInicio": "2026-07-27",
-      "status": "cancelada",
-      "id": "8uwI1BIX1tI"
+      "status": "ativa",
+      "id": "dScZcPZQBzs"
+    },
+    {
+      "alunoId": "14",
+      "planoId": "2",
+      "nomePlanoSnapshot": "Trimestral",
+      "valorMensalSnapshot": 129.9,
+      "dataInicio": "2026-07-27",
+      "status": "ativa",
+      "id": "hXGxiLMhhvM"
+    },
+    {
+      "alunoId": "17",
+      "planoId": "2",
+      "nomePlanoSnapshot": "Trimestral",
+      "valorMensalSnapshot": 129.9,
+      "dataInicio": "2026-07-27",
+      "status": "ativa",
+      "id": "Zv94q8RM3uI"
+    },
+    {
+      "alunoId": "16",
+      "planoId": "1",
+      "nomePlanoSnapshot": "Mensal",
+      "valorMensalSnapshot": 149.9,
+      "dataInicio": "2026-07-22",
+      "status": "ativa",
+      "id": "qvgdxThhkR8"
     }
   ],
   "pagamentos": [
@@ -278,9 +311,9 @@
       "matriculaId": "1",
       "valor": 129.9,
       "dataVencimento": "2026-05-10",
-      "dataPagamento": null,
-      "status": "pendente",
-      "forma": null
+      "dataPagamento": "2026-07-27",
+      "status": "pago",
+      "forma": "Cartão"
     },
     {
       "id": "5",
@@ -384,11 +417,11 @@
     {
       "id": "16",
       "matriculaId": "4",
-      "valor": 119.9,
+      "valor": 197.84,
       "dataVencimento": "2026-07-14",
-      "dataPagamento": null,
-      "status": "pendente",
-      "forma": null
+      "dataPagamento": "2026-07-27",
+      "status": "pago",
+      "forma": "Cartão"
     },
     {
       "id": "17",
@@ -404,9 +437,9 @@
       "matriculaId": "5",
       "valor": 149.9,
       "dataVencimento": "2026-08-01",
-      "dataPagamento": null,
-      "status": "pendente",
-      "forma": null
+      "dataPagamento": "2026-07-27",
+      "status": "pago",
+      "forma": "Dinheiro"
     },
     {
       "id": "19",
@@ -436,13 +469,67 @@
       "id": "krp31RTLxvI"
     },
     {
-      "matriculaId": "8uwI1BIX1tI",
-      "valor": 100,
+      "matriculaId": "dScZcPZQBzs",
+      "valor": 149.9,
       "dataVencimento": "2026-08-27",
       "dataPagamento": null,
       "status": "pendente",
       "forma": null,
-      "id": "QINIadWymX4"
+      "id": "XSgrHaYo5Dk"
+    },
+    {
+      "matriculaId": "hXGxiLMhhvM",
+      "valor": 129.9,
+      "dataVencimento": "2026-08-27",
+      "dataPagamento": null,
+      "status": "pendente",
+      "forma": null,
+      "id": "1hN8cExGEso"
+    },
+    {
+      "matriculaId": "Zv94q8RM3uI",
+      "valor": 129.9,
+      "dataVencimento": "2026-08-27",
+      "dataPagamento": null,
+      "status": "pendente",
+      "forma": null,
+      "id": "Q5giNP2E5aU"
+    },
+    {
+      "matriculaId": "qvgdxThhkR8",
+      "valor": 149.9,
+      "dataVencimento": "2026-08-22",
+      "dataPagamento": null,
+      "status": "pendente",
+      "forma": null,
+      "id": "citneUlQYiw"
+    },
+    {
+      "matriculaId": "1",
+      "valor": 129.9,
+      "dataVencimento": "2026-06-10",
+      "dataPagamento": null,
+      "status": "pendente",
+      "forma": null,
+      "id": "fFIaeiEQdoc"
+    },
+    {
+      "matriculaId": "4",
+      "valor": 119.9,
+      "dataVencimento": "2026-08-14",
+      "dataPagamento": null,
+      "status": "pendente",
+      "forma": null,
+      "id": "D3v01GrJbYI"
+    },
+    {
+      "matriculaId": "5",
+      "valor": 149.9,
+      "dataVencimento": "2026-09-01",
+      "dataPagamento": null,
+      "status": "pendente",
+      "forma": null,
+      "id": "dL7hJSw9RKw"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

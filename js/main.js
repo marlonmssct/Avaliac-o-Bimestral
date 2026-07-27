@@ -18,6 +18,13 @@ const POR_PAGINA = 10;
 const IDADE_MINIMA = 14;
 const FORMAS = ['Dinheiro', 'Cartão', 'Pix', 'Boleto'];
 
+/** Planos padrão da academia. Qualquer outro nome (sazonal, promocional etc.)
+ *  é agrupado como "Outros" no ranking do dashboard — inclusive depois de
+ *  excluído, preservando o histórico sem poluir o gráfico com nomes avulsos. */
+const PLANOS_PADRAO = ['Mensal', 'Trimestral', 'Semestral', 'Anual'];
+const ehPlanoPadrao = (nome) =>
+  PLANOS_PADRAO.some((p) => p.toLowerCase() === String(nome || '').trim().toLowerCase());
+
 /* ---------- Catálogo de mensagens ---------- */
 
 const MSG = {
@@ -48,6 +55,7 @@ const MSG = {
   valorInvalido: 'O valor mensal deve ser um número positivo.',
   duracaoInvalida: 'A duração deve ser um número inteiro maior que zero.',
   planoEmUso: 'Este plano não pode ser excluído pois possui matrícula ativa ou trancada vinculada.',
+  planoNomeDuplicado: 'Já existe um plano cadastrado com este nome.',
   semAlunoAtivo: 'Nenhum aluno ativo disponível. Cadastre um aluno antes de continuar.',
   semPlano: 'Nenhum plano cadastrado. Cadastre um plano antes de continuar.',
   matriculaEmAndamento: 'Este aluno já possui uma matrícula ativa ou trancada.'
@@ -236,18 +244,19 @@ function nomesDePlano() {
   return [...nomes].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 }
 
-const CORES_PLANO_FIXAS = {
-  'Mensal': 'p0',
-  'Trimestral': 'p1',
-  'Semestral': 'p2',
-  'Anual': 'p3'
-};
+/**
+ * Cor do plano nos gráficos, atribuída pela posição alfabética entre todos
+ * os nomes conhecidos (cadastrados + snapshots de matrículas). Nenhuma cor
+ * é reservada por nome — assim não há colisão garantida quando surge um
+ * plano além dos suportados pela paleta; ela apenas repete ciclicamente.
+ */
+const QTDE_CORES_PLANO = 6;
 
 function obterClasseCorPlano(nomePlano) {
-  if (CORES_PLANO_FIXAS[nomePlano]) return CORES_PLANO_FIXAS[nomePlano];
+  if (nomePlano === 'Outros') return 'outros';
   const todos = nomesDePlano();
   const idx = todos.indexOf(nomePlano);
-  return `p${(idx >= 0 ? idx : 0) % 4}`;
+  return `p${(idx >= 0 ? idx : 0) % QTDE_CORES_PLANO}`;
 }
 
 const CHIP_MATRICULA = { ativa: 'chip-blue', trancada: 'chip-yellow', cancelada: 'chip-red' };
@@ -440,7 +449,6 @@ function telaDashboard() {
   const receitaTotal = pagos.reduce((s, p) => s + Number(p.valor || 0), 0);
   const emAberto = atrasados.reduce((s, p) => s + Number(p.valor || 0), 0);
   const taxa = semMatriculas ? 0 : (porStatus('cancelada') / matriculas.length) * 100;
-  const alunosAtivosCount = db.alunos.filter((a) => a.ativo !== false).length;
 
   const metrica = (rotulo, valor, cor, nota = '', vazio = false) => `
     <div class="metric ${cor}">
@@ -459,12 +467,18 @@ function telaDashboard() {
   const listaReceita = Object.entries(porPlano).sort((a, b) => b[1] - a[1]);
   const maiorReceita = listaReceita.length ? listaReceita[0][1] : 0;
 
-  /* Ranking — nunca é afetado pelo filtro: existe para comparar planos entre si */
+  /* Ranking — nunca é afetado pelo filtro: existe para comparar planos entre si.
+     Planos fora da lista padrão (sazonais, promocionais) são somados em uma
+     única barra "Outros", mesmo depois de excluídos — o histórico continua
+     contando, só o nome individual não aparece mais. */
+  const totalOutros = db.matriculas.filter((m) => m.nomePlanoSnapshot && !ehPlanoPadrao(m.nomePlanoSnapshot)).length;
   const ranking = nomesDePlano()
+    .filter(ehPlanoPadrao)
     .map((nome) => ({
       nome,
       total: db.matriculas.filter((m) => m.nomePlanoSnapshot === nome).length
     }))
+    .concat(totalOutros > 0 ? [{ nome: 'Outros', total: totalOutros }] : [])
     .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome, 'pt-BR'));
   const maiorRanking = ranking.length ? ranking[0].total : 0;
 
@@ -806,6 +820,9 @@ function telaPlanoForm(id) {
 
     const erros = {};
     if (!nome) erros.nome = MSG.campoObrigatorio;
+    else if (db.planos.some((p) => p.nome.trim().toLowerCase() === nome.toLowerCase() && !same(p.id, plano?.id))) {
+      erros.nome = MSG.planoNomeDuplicado;
+    }
     if (!valor) erros.valorMensal = MSG.campoObrigatorio;
     else if (!(Number(valor) > 0)) erros.valorMensal = MSG.valorInvalido;
     if (!duracao) erros.duracaoMeses = MSG.campoObrigatorio;
@@ -935,7 +952,7 @@ function telaMatriculaForm(id) {
         <span class="err" data-erro="planoId"></span>
       </div>
 
-      ${campo('dataInicio', 'Data de início', 'date', matricula.dataInicio, `min="${hojeISO()}"`,
+      ${campo('dataInicio', 'Data de início', 'date', matricula.dataInicio, '',
         'Alterar a data não recalcula os pagamentos já gerados.')}
 
       <div class="form-actions">
@@ -952,7 +969,7 @@ function telaMatriculaForm(id) {
 
       const erros = {};
       if (!dataInicio) erros.dataInicio = MSG.campoObrigatorio;
-      else if (dataInicio < hojeISO()) erros.dataInicio = MSG.dataInicioPassada;
+      else if (dataInicio !== matricula.dataInicio && dataInicio < hojeISO()) erros.dataInicio = MSG.dataInicioPassada;
 
       if (emDia && !planoId) {
         erros.planoId = MSG.campoObrigatorio;
@@ -1231,7 +1248,7 @@ async function registrarPagamento(id) {
   const aluno = alunoDaMatricula(matricula);
   const planoNome = matricula?.nomePlanoSnapshot || 'Plano';
 
-  // Cálculo exato de dias de atraso e juros (5% por dia de atraso) sem interferência de fuso horário
+  // Cálculo exato de dias de atraso e juros (0,5% por dia de atraso) sem interferência de fuso horário
   const hoje = hojeISO();
   let diasAtraso = 0;
   if (pagamento.dataVencimento && pagamento.dataVencimento < hoje) {
@@ -1244,7 +1261,7 @@ async function registrarPagamento(id) {
   }
 
   const valorOriginal = Number(pagamento.valor || 0);
-  const percentualJuros = 0.05; // 5% por dia de atraso
+  const percentualJuros = 0.005; // 0,5% por dia de atraso
   const valorJuros = diasAtraso > 0 ? Number((valorOriginal * percentualJuros * diasAtraso).toFixed(2)) : 0;
   const valorTotal = Number((valorOriginal + valorJuros).toFixed(2));
 
@@ -1257,9 +1274,9 @@ async function registrarPagamento(id) {
       <p><strong>Valor original:</strong> ${formatarMoeda(valorOriginal)}</p>
       ${diasAtraso > 0 ? `
         <p style="color: #c0392b; font-weight: bold; margin-top: 8px;">
-          ⚠️ Mensalidade em atraso: ${diasAtraso} dia${diasAtraso === 1 ? '' : 's'} (5% de acréscimo por dia)
+          ⚠️ Mensalidade em atraso: ${diasAtraso} dia${diasAtraso === 1 ? '' : 's'} (0,5% de acréscimo por dia)
         </p>
-        <p style="color: #c0392b;"><strong>Juros/Multa (${diasAtraso} x 5%):</strong> +${formatarMoeda(valorJuros)}</p>
+        <p style="color: #c0392b;"><strong>Juros/Multa (${diasAtraso} x 0,5%):</strong> +${formatarMoeda(valorJuros)}</p>
         <p style="font-size: 1.1rem; color: #27ae60; font-weight: bold; margin-top: 4px;">
           Valor Total a Pagar: ${formatarMoeda(valorTotal)}
         </p>
@@ -1333,7 +1350,7 @@ async function registrarPagamento(id) {
         <hr style="border: 0; border-top: 1px solid #dee2e6; margin: 10px 0;">
         <p><strong>Valor Parcela:</strong> ${formatarMoeda(valorOriginal)}</p>
         ${diasAtraso > 0 ? `
-          <p style="color: #c0392b;"><strong>Atraso (${diasAtraso} dia${diasAtraso === 1 ? '' : 's'} x 5%):</strong> +${formatarMoeda(valorJuros)}</p>
+          <p style="color: #c0392b;"><strong>Atraso (${diasAtraso} dia${diasAtraso === 1 ? '' : 's'} x 0,5%):</strong> +${formatarMoeda(valorJuros)}</p>
         ` : '<p style="color: #27ae60;"><strong>Situação:</strong> Pagamento em dia (0% de acréscimo)</p>'}
         <p style="font-size: 1.15rem; font-weight: bold; color: #27ae60; margin-top: 8px;">
           TOTAL PAGO: ${formatarMoeda(valorTotal)}
