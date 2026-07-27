@@ -472,11 +472,12 @@ function telaDashboard() {
      única barra "Outros", mesmo depois de excluídos — o histórico continua
      contando, só o nome individual não aparece mais. */
   const totalOutros = db.matriculas.filter((m) => m.nomePlanoSnapshot && !ehPlanoPadrao(m.nomePlanoSnapshot)).length;
-  const ranking = nomesDePlano()
-    .filter(ehPlanoPadrao)
+  const todosOsNomes = nomesDePlano();
+  const ranking = PLANOS_PADRAO
+    .filter((nome) => todosOsNomes.some((n) => n.toLowerCase() === nome.toLowerCase()))
     .map((nome) => ({
       nome,
-      total: db.matriculas.filter((m) => m.nomePlanoSnapshot === nome).length
+      total: db.matriculas.filter((m) => String(m.nomePlanoSnapshot || '').toLowerCase() === nome.toLowerCase()).length
     }))
     .concat(totalOutros > 0 ? [{ nome: 'Outros', total: totalOutros }] : [])
     .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome, 'pt-BR'));
@@ -554,6 +555,8 @@ function telaDashboard() {
   $('#filtro-plano').addEventListener('change', (e) => {
     ui.dashboard.plano = e.target.value;
     telaDashboard();
+    const novoSelect = $('#filtro-plano');
+    if (novoSelect) novoSelect.focus();
   });
 }
 
@@ -979,11 +982,13 @@ function telaMatriculaForm(id) {
 
       const dadosAtualizacao = { dataInicio };
       if (emDia && planoId) {
-        const novoPlano = planoDe(planoId);
-        if (novoPlano) {
-          dadosAtualizacao.planoId = novoPlano.id;
-          dadosAtualizacao.nomePlanoSnapshot = novoPlano.nome;
-          dadosAtualizacao.valorMensalSnapshot = Number(novoPlano.valorMensal);
+        if (!same(planoId, matricula.planoId)) {
+          const novoPlano = planoDe(planoId);
+          if (novoPlano) {
+            dadosAtualizacao.planoId = novoPlano.id;
+            dadosAtualizacao.nomePlanoSnapshot = novoPlano.nome;
+            dadosAtualizacao.valorMensalSnapshot = Number(novoPlano.valorMensal);
+          }
         }
       }
 
@@ -1141,7 +1146,7 @@ function telaPagamentos() {
       </tr></thead>
       <tbody>${linhas}</tbody>
     </table>
-        </div > ${barraPaginacao(pag, 'pagamentos')} `;
+        </div>${barraPaginacao(pag, 'pagamentos')}`;
 
   view.innerHTML = `
     ${cabecalho('Pagamentos', 'Gerados automaticamente. Não é possível criar, editar ou excluir manualmente.')}
