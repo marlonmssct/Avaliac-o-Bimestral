@@ -1,54 +1,449 @@
 {
   "alunos": [
-    { "id": "1", "nome": "Ana Beatriz Moura", "cpf": "111.222.333-44", "telefone": "(11) 98844-1200", "dataNascimento": "1995-03-12", "ativo": true },
-    { "id": "2", "nome": "Carlos Eduardo Lima", "cpf": "222.333.444-55", "telefone": "(11) 97733-4521", "dataNascimento": "1988-11-02", "ativo": true },
-    { "id": "3", "nome": "Daniela Rocha", "cpf": "333.444.555-66", "telefone": "(11) 96622-7788", "dataNascimento": "2001-07-25", "ativo": true },
-    { "id": "4", "nome": "Eduardo Nakamura", "cpf": "444.555.666-77", "telefone": "(11) 95511-3344", "dataNascimento": "1979-01-30", "ativo": true },
-    { "id": "5", "nome": "Fernanda Prado", "cpf": "555.666.777-88", "telefone": "(11) 94400-9911", "dataNascimento": "2010-05-18", "ativo": true },
-    { "id": "6", "nome": "Gustavo Teixeira", "cpf": "666.777.888-99", "telefone": "(11) 93399-2255", "dataNascimento": "1993-09-08", "ativo": false }
+    {
+      "id": "1",
+      "nome": "Ana Beatriz Moura",
+      "cpf": "111.222.333-44",
+      "telefone": "(11) 98844-1200",
+      "dataNascimento": "1995-03-12",
+      "ativo": true
+    },
+    {
+      "id": "2",
+      "nome": "Carlos Eduardo Lima",
+      "cpf": "222.333.444-55",
+      "telefone": "(11) 97733-4521",
+      "dataNascimento": "1988-11-02",
+      "ativo": true
+    },
+    {
+      "id": "3",
+      "nome": "Daniela Rocha",
+      "cpf": "333.444.555-66",
+      "telefone": "(11) 96622-7788",
+      "dataNascimento": "2001-07-25",
+      "ativo": true
+    },
+    {
+      "id": "4",
+      "nome": "Eduardo Nakamura",
+      "cpf": "444.555.666-77",
+      "telefone": "(11) 95511-3344",
+      "dataNascimento": "1979-01-30",
+      "ativo": true
+    },
+    {
+      "id": "5",
+      "nome": "Fernanda Prado",
+      "cpf": "555.666.777-88",
+      "telefone": "(11) 94400-9911",
+      "dataNascimento": "2010-05-18",
+      "ativo": true
+    },
+    {
+      "id": "6",
+      "nome": "Gustavo Teixeira",
+      "cpf": "666.777.888-99",
+      "telefone": "(11) 93399-2255",
+      "dataNascimento": "1993-09-08",
+      "ativo": false
+    },
+    {
+      "nome": "José da Silva",
+      "cpf": "111.111.111-11",
+      "telefone": "(11) 11111-1111",
+      "dataNascimento": "2010-02-27",
+      "ativo": true,
+      "id": "i9ZdWDn9Imc"
+    },
+    {
+      "id": "7",
+      "nome": "Helena Castro",
+      "cpf": "777.888.999-00",
+      "telefone": "(11) 92288-3344",
+      "dataNascimento": "1997-04-15",
+      "ativo": true
+    },
+    {
+      "id": "8",
+      "nome": "Igor Santos",
+      "cpf": "888.999.000-11",
+      "telefone": "(11) 91177-4455",
+      "dataNascimento": "2002-12-03",
+      "ativo": true
+    },
+    {
+      "id": "9",
+      "nome": "Juliana Mendes",
+      "cpf": "999.000.111-22",
+      "telefone": "(11) 90066-5566",
+      "dataNascimento": "1991-08-21",
+      "ativo": true
+    },
+    {
+      "id": "10",
+      "nome": "Lucas Oliveira",
+      "cpf": "000.111.222-33",
+      "telefone": "(11) 98855-6677",
+      "dataNascimento": "1985-06-14",
+      "ativo": true
+    },
+    {
+      "id": "11",
+      "nome": "Mariana Costa",
+      "cpf": "123.456.789-00",
+      "telefone": "(11) 97744-8899",
+      "dataNascimento": "1999-10-09",
+      "ativo": true
+    },
+    {
+      "id": "12",
+      "nome": "Nicolas Ferreira",
+      "cpf": "234.567.890-11",
+      "telefone": "(11) 96633-1122",
+      "dataNascimento": "2004-02-17",
+      "ativo": true
+    },
+    {
+      "id": "13",
+      "nome": "Patricia Gomes",
+      "cpf": "345.678.901-22",
+      "telefone": "(11) 95522-3344",
+      "dataNascimento": "1990-05-29",
+      "ativo": false
+    },
+    {
+      "id": "14",
+      "nome": "Rafael Barbosa",
+      "cpf": "456.789.012-33",
+      "telefone": "(11) 94411-5566",
+      "dataNascimento": "1983-09-11",
+      "ativo": true
+    },
+    {
+      "id": "15",
+      "nome": "Sofia Martins",
+      "cpf": "567.890.123-44",
+      "telefone": "(11) 93300-7788",
+      "dataNascimento": "2000-11-23",
+      "ativo": true
+    },
+    {
+      "id": "16",
+      "nome": "Thiago Alves",
+      "cpf": "678.901.234-55",
+      "telefone": "(11) 92299-8899",
+      "dataNascimento": "1996-01-05",
+      "ativo": true
+    },
+    {
+      "id": "17",
+      "nome": "Vanessa Ribeiro",
+      "cpf": "789.012.345-66",
+      "telefone": "(11) 91188-0011",
+      "dataNascimento": "1989-07-19",
+      "ativo": true
+    }
   ],
-
   "planos": [
-    { "id": "1", "nome": "Mensal", "valorMensal": 149.9, "duracaoMeses": 1 },
-    { "id": "2", "nome": "Trimestral", "valorMensal": 129.9, "duracaoMeses": 3 },
-    { "id": "3", "nome": "Semestral", "valorMensal": 119.9, "duracaoMeses": 6 },
-    { "id": "4", "nome": "Anual", "valorMensal": 99.9, "duracaoMeses": 12 }
+    {
+      "id": "1",
+      "nome": "Mensal",
+      "valorMensal": 149.9,
+      "duracaoMeses": 1
+    },
+    {
+      "id": "2",
+      "nome": "Trimestral",
+      "valorMensal": 129.9,
+      "duracaoMeses": 3
+    },
+    {
+      "id": "3",
+      "nome": "Semestral",
+      "valorMensal": 119.9,
+      "duracaoMeses": 6
+    },
+    {
+      "id": "4",
+      "nome": "Anual",
+      "valorMensal": 99.9,
+      "duracaoMeses": 12
+    }
   ],
-
   "matriculas": [
-    { "id": "1", "alunoId": "1", "planoId": "2", "nomePlanoSnapshot": "Trimestral", "valorMensalSnapshot": 129.9, "dataInicio": "2026-01-10", "status": "ativa" },
-    { "id": "2", "alunoId": "2", "planoId": "1", "nomePlanoSnapshot": "Mensal", "valorMensalSnapshot": 149.9, "dataInicio": "2026-03-05", "status": "ativa" },
-    { "id": "3", "alunoId": "3", "planoId": "4", "nomePlanoSnapshot": "Anual", "valorMensalSnapshot": 99.9, "dataInicio": "2025-09-20", "status": "trancada" },
-    { "id": "4", "alunoId": "4", "planoId": "3", "nomePlanoSnapshot": "Semestral", "valorMensalSnapshot": 119.9, "dataInicio": "2026-02-14", "status": "ativa" },
-    { "id": "5", "alunoId": "5", "planoId": "1", "nomePlanoSnapshot": "Mensal", "valorMensalSnapshot": 149.9, "dataInicio": "2026-06-01", "status": "ativa" },
-    { "id": "6", "alunoId": "6", "planoId": "2", "nomePlanoSnapshot": "Trimestral", "valorMensalSnapshot": 129.9, "dataInicio": "2025-04-11", "status": "cancelada" }
+    {
+      "id": "1",
+      "alunoId": "1",
+      "planoId": "2",
+      "nomePlanoSnapshot": "Trimestral",
+      "valorMensalSnapshot": 129.9,
+      "dataInicio": "2026-01-10",
+      "status": "ativa"
+    },
+    {
+      "id": "2",
+      "alunoId": "2",
+      "planoId": "1",
+      "nomePlanoSnapshot": "Mensal",
+      "valorMensalSnapshot": 149.9,
+      "dataInicio": "2026-03-05",
+      "status": "ativa"
+    },
+    {
+      "id": "3",
+      "alunoId": "3",
+      "planoId": "4",
+      "nomePlanoSnapshot": "Anual",
+      "valorMensalSnapshot": 99.9,
+      "dataInicio": "2025-09-20",
+      "status": "trancada"
+    },
+    {
+      "id": "4",
+      "alunoId": "4",
+      "planoId": "3",
+      "nomePlanoSnapshot": "Semestral",
+      "valorMensalSnapshot": 119.9,
+      "dataInicio": "2026-02-14",
+      "status": "ativa"
+    },
+    {
+      "id": "5",
+      "alunoId": "5",
+      "planoId": "1",
+      "nomePlanoSnapshot": "Mensal",
+      "valorMensalSnapshot": 149.9,
+      "dataInicio": "2026-06-01",
+      "status": "ativa"
+    },
+    {
+      "id": "6",
+      "alunoId": "6",
+      "planoId": "2",
+      "nomePlanoSnapshot": "Trimestral",
+      "valorMensalSnapshot": 129.9,
+      "dataInicio": "2025-04-11",
+      "status": "cancelada"
+    },
+    {
+      "alunoId": "i9ZdWDn9Imc",
+      "planoId": "1",
+      "nomePlanoSnapshot": "Mensal",
+      "valorMensalSnapshot": 149.9,
+      "dataInicio": "2026-07-26",
+      "status": "cancelada",
+      "id": "VVXzh5P2vjo"
+    },
+    {
+      "alunoId": "i9ZdWDn9Imc",
+      "planoId": null,
+      "nomePlanoSnapshot": "bimestral",
+      "valorMensalSnapshot": 100,
+      "dataInicio": "2026-07-27",
+      "status": "cancelada",
+      "id": "8uwI1BIX1tI"
+    }
   ],
-
   "pagamentos": [
-    { "id": "1", "matriculaId": "1", "valor": 129.9, "dataVencimento": "2026-02-10", "dataPagamento": "2026-02-10", "status": "pago", "forma": "Pix" },
-    { "id": "2", "matriculaId": "1", "valor": 129.9, "dataVencimento": "2026-03-10", "dataPagamento": "2026-03-09", "status": "pago", "forma": "Cartão" },
-    { "id": "3", "matriculaId": "1", "valor": 129.9, "dataVencimento": "2026-04-10", "dataPagamento": "2026-04-11", "status": "pago", "forma": "Pix" },
-    { "id": "4", "matriculaId": "1", "valor": 129.9, "dataVencimento": "2026-05-10", "dataPagamento": null, "status": "pendente", "forma": null },
-
-    { "id": "5", "matriculaId": "2", "valor": 149.9, "dataVencimento": "2026-04-05", "dataPagamento": "2026-04-05", "status": "pago", "forma": "Dinheiro" },
-    { "id": "6", "matriculaId": "2", "valor": 149.9, "dataVencimento": "2026-05-05", "dataPagamento": "2026-05-06", "status": "pago", "forma": "Cartão" },
-    { "id": "7", "matriculaId": "2", "valor": 149.9, "dataVencimento": "2026-06-05", "dataPagamento": "2026-06-05", "status": "pago", "forma": "Pix" },
-    { "id": "8", "matriculaId": "2", "valor": 149.9, "dataVencimento": "2026-07-05", "dataPagamento": null, "status": "pendente", "forma": null },
-
-    { "id": "9", "matriculaId": "3", "valor": 99.9, "dataVencimento": "2025-10-20", "dataPagamento": "2025-10-20", "status": "pago", "forma": "Boleto" },
-    { "id": "10", "matriculaId": "3", "valor": 99.9, "dataVencimento": "2025-11-20", "dataPagamento": "2025-11-19", "status": "pago", "forma": "Boleto" },
-    { "id": "11", "matriculaId": "3", "valor": 99.9, "dataVencimento": "2025-12-20", "dataPagamento": null, "status": "pendente", "forma": null },
-
-    { "id": "12", "matriculaId": "4", "valor": 119.9, "dataVencimento": "2026-03-14", "dataPagamento": "2026-03-14", "status": "pago", "forma": "Pix" },
-    { "id": "13", "matriculaId": "4", "valor": 119.9, "dataVencimento": "2026-04-14", "dataPagamento": "2026-04-14", "status": "pago", "forma": "Pix" },
-    { "id": "14", "matriculaId": "4", "valor": 119.9, "dataVencimento": "2026-05-14", "dataPagamento": "2026-05-15", "status": "pago", "forma": "Cartão" },
-    { "id": "15", "matriculaId": "4", "valor": 119.9, "dataVencimento": "2026-06-14", "dataPagamento": "2026-06-14", "status": "pago", "forma": "Pix" },
-    { "id": "16", "matriculaId": "4", "valor": 119.9, "dataVencimento": "2026-07-14", "dataPagamento": null, "status": "pendente", "forma": null },
-
-    { "id": "17", "matriculaId": "5", "valor": 149.9, "dataVencimento": "2026-07-01", "dataPagamento": "2026-07-02", "status": "pago", "forma": "Dinheiro" },
-    { "id": "18", "matriculaId": "5", "valor": 149.9, "dataVencimento": "2026-08-01", "dataPagamento": null, "status": "pendente", "forma": null },
-
-    { "id": "19", "matriculaId": "6", "valor": 129.9, "dataVencimento": "2025-05-11", "dataPagamento": "2025-05-11", "status": "pago", "forma": "Cartão" },
-    { "id": "20", "matriculaId": "6", "valor": 129.9, "dataVencimento": "2025-06-11", "dataPagamento": null, "status": "pendente", "forma": null }
-  ]
+    {
+      "id": "1",
+      "matriculaId": "1",
+      "valor": 129.9,
+      "dataVencimento": "2026-02-10",
+      "dataPagamento": "2026-02-10",
+      "status": "pago",
+      "forma": "Pix"
+    },
+    {
+      "id": "2",
+      "matriculaId": "1",
+      "valor": 129.9,
+      "dataVencimento": "2026-03-10",
+      "dataPagamento": "2026-03-09",
+      "status": "pago",
+      "forma": "Cartão"
+    },
+    {
+      "id": "3",
+      "matriculaId": "1",
+      "valor": 129.9,
+      "dataVencimento": "2026-04-10",
+      "dataPagamento": "2026-04-11",
+      "status": "pago",
+      "forma": "Pix"
+    },
+    {
+      "id": "4",
+      "matriculaId": "1",
+      "valor": 129.9,
+      "dataVencimento": "2026-05-10",
+      "dataPagamento": null,
+      "status": "pendente",
+      "forma": null
+    },
+    {
+      "id": "5",
+      "matriculaId": "2",
+      "valor": 149.9,
+      "dataVencimento": "2026-04-05",
+      "dataPagamento": "2026-04-05",
+      "status": "pago",
+      "forma": "Dinheiro"
+    },
+    {
+      "id": "6",
+      "matriculaId": "2",
+      "valor": 149.9,
+      "dataVencimento": "2026-05-05",
+      "dataPagamento": "2026-05-06",
+      "status": "pago",
+      "forma": "Cartão"
+    },
+    {
+      "id": "7",
+      "matriculaId": "2",
+      "valor": 149.9,
+      "dataVencimento": "2026-06-05",
+      "dataPagamento": "2026-06-05",
+      "status": "pago",
+      "forma": "Pix"
+    },
+    {
+      "id": "8",
+      "matriculaId": "2",
+      "valor": 149.9,
+      "dataVencimento": "2026-07-05",
+      "dataPagamento": null,
+      "status": "pendente",
+      "forma": null
+    },
+    {
+      "id": "9",
+      "matriculaId": "3",
+      "valor": 99.9,
+      "dataVencimento": "2025-10-20",
+      "dataPagamento": "2025-10-20",
+      "status": "pago",
+      "forma": "Boleto"
+    },
+    {
+      "id": "10",
+      "matriculaId": "3",
+      "valor": 99.9,
+      "dataVencimento": "2025-11-20",
+      "dataPagamento": "2025-11-19",
+      "status": "pago",
+      "forma": "Boleto"
+    },
+    {
+      "id": "11",
+      "matriculaId": "3",
+      "valor": 99.9,
+      "dataVencimento": "2025-12-20",
+      "dataPagamento": null,
+      "status": "pendente",
+      "forma": null
+    },
+    {
+      "id": "12",
+      "matriculaId": "4",
+      "valor": 119.9,
+      "dataVencimento": "2026-03-14",
+      "dataPagamento": "2026-03-14",
+      "status": "pago",
+      "forma": "Pix"
+    },
+    {
+      "id": "13",
+      "matriculaId": "4",
+      "valor": 119.9,
+      "dataVencimento": "2026-04-14",
+      "dataPagamento": "2026-04-14",
+      "status": "pago",
+      "forma": "Pix"
+    },
+    {
+      "id": "14",
+      "matriculaId": "4",
+      "valor": 119.9,
+      "dataVencimento": "2026-05-14",
+      "dataPagamento": "2026-05-15",
+      "status": "pago",
+      "forma": "Cartão"
+    },
+    {
+      "id": "15",
+      "matriculaId": "4",
+      "valor": 119.9,
+      "dataVencimento": "2026-06-14",
+      "dataPagamento": "2026-06-14",
+      "status": "pago",
+      "forma": "Pix"
+    },
+    {
+      "id": "16",
+      "matriculaId": "4",
+      "valor": 119.9,
+      "dataVencimento": "2026-07-14",
+      "dataPagamento": null,
+      "status": "pendente",
+      "forma": null
+    },
+    {
+      "id": "17",
+      "matriculaId": "5",
+      "valor": 149.9,
+      "dataVencimento": "2026-07-01",
+      "dataPagamento": "2026-07-02",
+      "status": "pago",
+      "forma": "Dinheiro"
+    },
+    {
+      "id": "18",
+      "matriculaId": "5",
+      "valor": 149.9,
+      "dataVencimento": "2026-08-01",
+      "dataPagamento": null,
+      "status": "pendente",
+      "forma": null
+    },
+    {
+      "id": "19",
+      "matriculaId": "6",
+      "valor": 129.9,
+      "dataVencimento": "2025-05-11",
+      "dataPagamento": "2025-05-11",
+      "status": "pago",
+      "forma": "Cartão"
+    },
+    {
+      "id": "20",
+      "matriculaId": "6",
+      "valor": 129.9,
+      "dataVencimento": "2025-06-11",
+      "dataPagamento": null,
+      "status": "pendente",
+      "forma": null
+    },
+    {
+      "matriculaId": "VVXzh5P2vjo",
+      "valor": 149.9,
+      "dataVencimento": "2026-08-26",
+      "dataPagamento": "2026-07-27",
+      "status": "pago",
+      "forma": "Pix",
+      "id": "krp31RTLxvI"
+    },
+    {
+      "matriculaId": "8uwI1BIX1tI",
+      "valor": 100,
+      "dataVencimento": "2026-08-27",
+      "dataPagamento": null,
+      "status": "pendente",
+      "forma": null,
+      "id": "QINIadWymX4"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
 }
