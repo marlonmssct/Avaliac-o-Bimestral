@@ -1,16 +1,65 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avaliação Bimestral</title>
-    <!-- Vinculação do arquivo de estilos (CSS) -->
-    <link rel="stylesheet" href="css/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academia — Painel de recepção</title>
+  <link rel="icon" href="assets/icons/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <h1>Avaliação Bimestral</h1>
-    
-    <!-- Vinculação do script JavaScript (defer garante a leitura do HTML antes da execução do JS) -->
-    <script src="js/main.js" defer></script>
+
+  <a class="skip-link" href="#view">Ir para o conteúdo</a>
+
+  <div class="app">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="assets/icons/logo.svg" alt="" width="30" height="30">
+        <div class="brand-text">
+          <strong>Academia</strong>
+          <span>Painel de recepção</span>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Navegação principal">
+        <a class="nav-link" href="#/dashboard" data-nav="dashboard">Visão geral</a>
+        <a class="nav-link" href="#/alunos" data-nav="alunos">Alunos</a>
+        <a class="nav-link" href="#/planos" data-nav="planos">Planos</a>
+        <a class="nav-link" href="#/matriculas" data-nav="matriculas">Matrículas</a>
+        <a class="nav-link" href="#/pagamentos" data-nav="pagamentos">Pagamentos</a>
+      </nav>
+
+      <div class="sidebar-foot">
+        <span class="api-dot" id="api-dot" aria-hidden="true"></span>
+        <span id="api-status">Conectando…</span>
+      </div>
+    </aside>
+
+    <main class="main" id="view" tabindex="-1">
+      <!-- Views renderizadas por js/main.js -->
+    </main>
+
+  </div>
+
+  <!-- Modal de confirmação / formulário de baixa -->
+  <div class="modal-backdrop" id="modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h2 class="modal-title" id="modal-title"></h2>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="modal-cancel">Voltar</button>
+        <button type="button" class="btn btn-solid" id="modal-confirm">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Avisos -->
+  <div class="toast-stack" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="js/main.js"></script>
 </body>
 </html>
