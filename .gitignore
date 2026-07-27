@@ -1,0 +1,9 @@
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Dependências (caso venha a usar npm futuramente)
+node_modules/
+
+# Arquivos temporários e logs
+*.log
