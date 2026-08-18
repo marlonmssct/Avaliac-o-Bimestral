@@ -179,14 +179,19 @@ button, input, select { font: inherit; color: inherit; }
 /* ---------- Botões ---------- */
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--ink);
   background: var(--surface);
-  padding: 9px 16px;
+  padding: 8px 16px;
+  height: 38px;
   border-radius: var(--radius);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background var(--step), color var(--step), transform var(--step);
+  white-space: nowrap;
+  transition: background var(--step), color var(--step), border-color var(--step), transform var(--step);
 }
 .btn:hover { background: var(--ink); color: #fff; }
 .btn:active { transform: translateY(1px); }
@@ -200,9 +205,9 @@ button, input, select { font: inherit; color: inherit; }
 .btn-danger { border-color: var(--plate-red); color: var(--plate-red); }
 .btn-danger:hover { background: var(--plate-red); color: #fff; }
 
-.btn-sm { padding: 5px 11px; font-size: 13px; }
+.btn-sm { padding: 4px 12px; height: 30px; font-size: 13px; }
 
-.row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
 
 /* ---------- Cartões e tabelas ---------- */
 
@@ -418,7 +423,7 @@ td.acts { text-align: right; white-space: nowrap; }
   border-top-color: var(--plate-blue);
   border-radius: 50%;
   margin: 0 auto 12px;
-  animation: spin 700ms linear infinite;
+  animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -518,3 +523,183 @@ td.acts { text-align: right; white-space: nowrap; }
   .form-grid-2 { grid-template-columns: 1fr; }
   .head h1 { font-size: 25px; }
 }
+
+/* ---------- Indicador de Campo Obrigatório ---------- */
+
+.required-asterisk {
+  color: var(--plate-red);
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+/* ---------- Cabeçalho do Dashboard ---------- */
+
+.admin-header {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #fff;
+  padding: 22px 26px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+}
+.admin-header-title {
+  margin: 0 0 4px 0;
+  font-size: 1.55rem;
+  color: #f8fafc;
+  font-weight: 700;
+}
+.admin-header-desc {
+  margin: 0 0 8px 0;
+  color: #cbd5e1;
+  font-size: 0.95rem;
+}
+.admin-header-date {
+  font-size: 0.88rem;
+  color: #38bdf8;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.admin-filter-group {
+  background: rgba(255,255,255,0.07);
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.admin-filter-label {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 4px;
+}
+.admin-filter-select {
+  background: #0f172a;
+  color: #fff;
+  border: 1px solid #334155;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--step);
+}
+.admin-filter-select:hover, .admin-filter-select:focus {
+  border-color: #38bdf8;
+}
+.admin-clock-box {
+  background: rgba(255,255,255,0.07);
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  text-align: center;
+}
+.admin-clock-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.admin-clock-time {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #38bdf8;
+  font-family: monospace;
+  letter-spacing: 1px;
+}
+
+/* ---------- Grupo de Filtro de Busca nas Listagens ---------- */
+
+.filter-search-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+.search-select {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  background: var(--surface);
+}
+
+/* ---------- Modal de Pagamento e Comprovante ---------- */
+
+.payment-modal-info {
+  margin-bottom: 15px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.payment-late-warning {
+  color: var(--plate-red);
+  font-weight: bold;
+  margin-top: 8px;
+}
+.payment-late-interest {
+  color: var(--plate-red);
+}
+.payment-total-amount {
+  font-size: 1.1rem;
+  color: var(--plate-green);
+  font-weight: bold;
+  margin-top: 6px;
+}
+.banner-warning-text {
+  color: var(--plate-red);
+  font-weight: bold;
+}
+
+.payment-receipt-box {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  padding: 16px;
+  line-height: 1.6;
+}
+.payment-receipt-title {
+  color: var(--plate-green);
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+}
+.payment-receipt-hr {
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  margin: 10px 0;
+}
+.payment-receipt-late {
+  color: var(--plate-red);
+}
+.payment-receipt-ontime {
+  color: var(--plate-green);
+}
+.payment-receipt-total {
+  font-size: 1.15rem;
+  font-weight: bold;
+  color: var(--plate-green);
+  margin-top: 8px;
+}
+.payment-receipt-next {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--green-wash);
+  border-left: 4px solid var(--plate-green);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+}
+

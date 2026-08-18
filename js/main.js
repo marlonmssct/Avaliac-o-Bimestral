@@ -2,31 +2,39 @@
    Academia — Painel de recepção
    SPA sem framework. Dados via json-server (http://localhost:3000).
 
-   Decisões implementadas (ver decisoes_academia.md):
+   Decisões implementadas:
    - "atrasado" NUNCA é persistido: sempre derivado de dataVencimento.
    - Matrícula guarda snapshot do nome e do valor mensal do plano.
-   - Pagamento seguinte usa o snapshot e vence 1 mês após o anterior
-     (com ajuste para o último dia do mês quando o dia não existe).
-   - Cancelar matrícula não altera pagamentos em aberto.
-   - Matrícula trancada continua gerando cobrança (texto literal do PDF).
+   - 1º pagamento vence 1 mês após a data de início (preservando o dia via somarMeses).
+   - Validação de CPF ajustada para verificar 11 dígitos numéricos sem Módulo 11 (atendendo ao spec).
+   - Ranking do Dashboard 100% dinâmico exibindo todos os planos nominalmente.
+   - Botão "Editar" em Matrículas visível exclusivamente para status "ativa".
    ============================================================ */
 
 'use strict';
+
+/* ============================================================
+   1. Configurações e Constantes Globais
+   ============================================================ */
 
 const API = 'http://localhost:3000';
 const POR_PAGINA = 10;
 const IDADE_MINIMA = 14;
 const FORMAS = ['Dinheiro', 'Cartão', 'Pix', 'Boleto'];
 
-/** Planos padrão da academia. Qualquer outro nome (sazonal, promocional etc.)
- *  é agrupado como "Outros" no ranking do dashboard — inclusive depois de
- *  excluído, preservando o histórico sem poluir o gráfico com nomes avulsos. */
-const PLANOS_PADRAO = ['Mensal', 'Trimestral', 'Semestral', 'Anual'];
-const ehPlanoPadrao = (nome) =>
-  PLANOS_PADRAO.some((p) => p.toLowerCase() === String(nome || '').trim().toLowerCase());
+const CHIP_MATRICULA = {
+  ativa: 'chip-blue',
+  trancada: 'chip-yellow',
+  cancelada: 'chip-red'
+};
 
-/* ---------- Catálogo de mensagens ---------- */
+const CHIP_PAGAMENTO = {
+  pago: 'chip-green',
+  pendente: 'chip-yellow',
+  atrasado: 'chip-red'
+};
 
+/* Catálogo central de mensagens */
 const MSG = {
   vazioAlunos: 'Nenhum aluno cadastrado.',
   vazioPlanos: 'Nenhum plano cadastrado.',
@@ -46,7 +54,7 @@ const MSG = {
   okMatriculaEdit: 'Matrícula atualizada com sucesso.',
   campoObrigatorio: 'Este campo é obrigatório.',
   cpfFormato: 'CPF deve estar no formato 000.000.000-00.',
-  cpfInvalido: 'CPF inválido. Não são permitidos números repetidos ou sequenciais (ex: 000.000.000-00 ou 123.456.789-00).',
+  cpfInvalido: 'CPF inválido. Deve conter 11 dígitos numéricos e não pode ter todos os dígitos iguais.',
   cpfDuplicado: 'Já existe um aluno cadastrado com este CPF.',
   telefoneFormato: 'Telefone deve estar no formato (00) 00000-0000.',
   nascimentoFuturo: 'A data de nascimento não pode ser uma data futura.',
@@ -61,7 +69,9 @@ const MSG = {
   matriculaEmAndamento: 'Este aluno já possui uma matrícula ativa ou trancada.'
 };
 
-/* ---------- Estado ---------- */
+/* ============================================================
+   2. Estado Global da Aplicação
+   ============================================================ */
 
 let db = { alunos: [], planos: [], matriculas: [], pagamentos: [] };
 let relogioTimer = null;
@@ -77,17 +87,19 @@ const $ = (sel) => document.querySelector(sel);
 const view = $('#view');
 
 /* ============================================================
-   Utilidades
+   3. Utilidades e Regras Derivadas
    ============================================================ */
 
 const same = (a, b) => String(a) === String(b);
 
+/** Sanitiza HTML para evitar XSS */
 function esc(txt) {
   return String(txt ?? '').replace(/[&<>"']/g, (c) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
   ));
 }
 
+/** Converte Date para string no formato YYYY-MM-DD */
 function paraISO(data) {
   const m = String(data.getMonth() + 1).padStart(2, '0');
   const d = String(data.getDate()).padStart(2, '0');
@@ -96,24 +108,28 @@ function paraISO(data) {
 
 const hojeISO = () => paraISO(new Date());
 
+/** Converte data ISO (YYYY-MM-DD) para formato DD/MM/YYYY */
 function formatarData(iso) {
   if (!iso) return '—';
   const [a, m, d] = iso.split('-');
   return `${d}/${m}/${a}`;
 }
 
+/** Formata valor para Moeda Brasileira (R$) */
 function formatarMoeda(valor) {
   return Number(valor || 0).toLocaleString('pt-BR', {
     style: 'currency', currency: 'BRL', minimumFractionDigits: 2
   });
 }
 
+/** Formata data por extenso */
 function formatarDataExtenso(d = new Date()) {
   const dias = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
   const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   return `${dias[d.getDay()]}, ${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
+/** Formata a hora atual HH:MM:SS */
 function formatarHoraTempoReal(d = new Date()) {
   const h = String(d.getHours()).padStart(2, '0');
   const m = String(d.getMinutes()).padStart(2, '0');
@@ -121,7 +137,9 @@ function formatarHoraTempoReal(d = new Date()) {
   return `${h}:${m}:${s}`;
 }
 
-/** Soma meses ajustando para o último dia quando o dia não existe (31/01 -> 28/02). */
+/**
+ * Soma meses preservando o dia original (ex: 15/08 -> 15/09 | 31/01 -> 28/02).
+ */
 function somarMeses(iso, meses) {
   if (!iso) return hojeISO();
   const [a, m, d] = iso.split('-').map(Number);
@@ -131,52 +149,20 @@ function somarMeses(iso, meses) {
   return paraISO(alvo);
 }
 
-/** Retorna a data correspondente ao dia 01 do mês seguinte (ex: 11/08 -> 01/09). */
-function primeiroDiaMesSeguinte(iso) {
-  if (!iso) return hojeISO();
-  const [a, m] = iso.split('-').map(Number);
-  const proximoMes = m === 12 ? 1 : m + 1;
-  const proximoAno = m === 12 ? a + 1 : a;
-  const mm = String(proximoMes).padStart(2, '0');
-  return `${proximoAno}-${mm}-01`;
-}
-
 function temIdadeMinima(iso, anos) {
   const [a, m, d] = iso.split('-').map(Number);
   return paraISO(new Date(a + anos, m - 1, d)) <= hojeISO();
 }
 
+/**
+ * Validação de CPF ajustada: verifica estrutura de 11 dígitos e bloqueia sequências repetidas.
+ * O spec dispensa o cálculo do dígito verificador por módulo 11.
+ */
 function validarCPF(cpf) {
   if (!cpf) return false;
   const num = String(cpf).replace(/\D/g, '');
   if (num.length !== 11) return false;
-
-  // Impede dígitos repetidos (ex: 000.000.000-00, 111.111.111-11)
   if (/^(\d)\1{10}$/.test(num)) return false;
-
-  // Impede sequências numéricas diretas ou inversas (ex: 12345678901 ou 98765432109)
-  let eCrescente = true;
-  let eDecrescente = true;
-  for (let i = 0; i < 10; i++) {
-    if (Number(num[i + 1]) !== (Number(num[i]) + 1) % 10) eCrescente = false;
-    if (Number(num[i + 1]) !== (Number(num[i]) + 9) % 10) eDecrescente = false;
-  }
-  if (eCrescente || eDecrescente) return false;
-
-  // Cálculo do 1º Dígito Verificador (Módulo 11)
-  let soma = 0;
-  for (let i = 0; i < 9; i++) soma += Number(num[i]) * (10 - i);
-  let resto = (soma * 10) % 11;
-  if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== Number(num[9])) return false;
-
-  // Cálculo do 2º Dígito Verificador (Módulo 11)
-  soma = 0;
-  for (let i = 0; i < 10; i++) soma += Number(num[i]) * (11 - i);
-  resto = (soma * 10) % 11;
-  if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== Number(num[10])) return false;
-
   return true;
 }
 
@@ -205,11 +191,7 @@ function debounce(fn, ms) {
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
 
-/* ============================================================
-   Regras derivadas
-   ============================================================ */
-
-/** "atrasado" é sempre calculado, nunca lido do registro. */
+/** "atrasado" é sempre calculado pela data de vencimento, nunca lido do registro. */
 function statusPagamento(p) {
   if (p.status === 'pago') return 'pago';
   return p.dataVencimento && p.dataVencimento < hojeISO() ? 'atrasado' : 'pendente';
@@ -237,36 +219,26 @@ function planoEmUso(planoId) {
   );
 }
 
-/** Todos os nomes de plano relevantes: cadastrados + histórico congelado. */
+/** Todos os nomes de plano relevantes: cadastrados + histórico de matrículas */
 function nomesDePlano() {
   const nomes = new Set(db.planos.map((p) => p.nome));
   db.matriculas.forEach((m) => { if (m.nomePlanoSnapshot) nomes.add(m.nomePlanoSnapshot); });
   return [...nomes].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 }
 
-/**
- * Cor do plano nos gráficos, atribuída pela posição alfabética entre todos
- * os nomes conhecidos (cadastrados + snapshots de matrículas). Nenhuma cor
- * é reservada por nome — assim não há colisão garantida quando surge um
- * plano além dos suportados pela paleta; ela apenas repete ciclicamente.
- */
 const QTDE_CORES_PLANO = 6;
 
 function obterClasseCorPlano(nomePlano) {
-  if (nomePlano === 'Outros') return 'outros';
   const todos = nomesDePlano();
   const idx = todos.indexOf(nomePlano);
   return `p${(idx >= 0 ? idx : 0) % QTDE_CORES_PLANO}`;
 }
 
-const CHIP_MATRICULA = { ativa: 'chip-blue', trancada: 'chip-yellow', cancelada: 'chip-red' };
-const CHIP_PAGAMENTO = { pago: 'chip-green', pendente: 'chip-yellow', atrasado: 'chip-red' };
-
 const chip = (texto, classe) =>
   `<span class="chip ${classe}">${esc(texto[0].toUpperCase() + texto.slice(1))}</span>`;
 
 /* ============================================================
-   API
+   4. Comunicação com a API REST
    ============================================================ */
 
 async function req(caminho, opcoes = {}) {
@@ -287,26 +259,26 @@ async function carregarTudo() {
 }
 
 function marcarConexao(ok) {
-  $('#api-dot').className = `api-dot ${ok ? 'is-on' : 'is-off'}`;
-  $('#api-status').textContent = ok ? 'Conectado ao servidor' : 'Servidor indisponível';
+  const dot = $('#api-dot');
+  const status = $('#api-status');
+  if (dot) dot.className = `api-dot ${ok ? 'is-on' : 'is-off'}`;
+  if (status) status.textContent = ok ? 'Conectado ao servidor' : 'Servidor indisponível';
 }
 
 /* ============================================================
-   Avisos e modal
+   5. Componentes de Interface e Helpers Visuais
    ============================================================ */
 
 function avisar(texto, erro = false) {
+  const stack = $('#toasts');
+  if (!stack) return;
   const el = document.createElement('div');
   el.className = `toast${erro ? ' is-error' : ''}`;
   el.textContent = texto;
-  $('#toasts').appendChild(el);
+  stack.appendChild(el);
   setTimeout(() => el.remove(), 4200);
 }
 
-/**
- * Modal genérico. Resolve com o valor de validar() ou com true;
- * resolve null quando o usuário volta atrás.
- */
 function abrirModal({ titulo, corpo = '', rotulo = 'Confirmar', perigo = false, validar = null }) {
   return new Promise((resolve) => {
     const caixa = $('#modal');
@@ -348,10 +320,6 @@ function abrirModal({ titulo, corpo = '', rotulo = 'Confirmar', perigo = false, 
 const confirmar = (titulo, corpo, rotulo = 'Confirmar', perigo = false) =>
   abrirModal({ titulo, corpo: `<p>${esc(corpo)}</p>`, rotulo, perigo });
 
-/* ============================================================
-   Blocos de tela reaproveitados
-   ============================================================ */
-
 const carregando = (texto = 'Carregando dados…') =>
   `<div class="state"><div class="spinner"></div><p>${esc(texto)}</p></div>`;
 
@@ -387,9 +355,12 @@ function barraPaginacao(pag, acao) {
   </div>`;
 }
 
-function campo(nome, rotulo, tipo, valor = '', extra = '', dica = '') {
+function campo(nome, rotulo, tipo, valor = '', extra = '', dica = '', obrigatorio = true) {
   return `<div class="field">
-    <label for="f-${nome}">${esc(rotulo)}</label>
+    <label for="f-${nome}">
+      ${esc(rotulo)}
+      ${obrigatorio ? '<span class="required-asterisk" aria-hidden="true">*</span>' : ''}
+    </label>
     <input id="f-${nome}" name="${nome}" type="${tipo}" value="${esc(valor)}" ${extra}>
     ${dica ? `<span class="hint">${esc(dica)}</span>` : ''}
     <span class="err" data-erro="${nome}"></span>
@@ -415,7 +386,7 @@ function mostrarErros(erros) {
 const valorDe = (nome) => (view.querySelector(`[name="${nome}"]`)?.value || '').trim();
 
 /* ============================================================
-   Tela: Visão geral
+   6. Tela: Visão Geral (Dashboard)
    ============================================================ */
 
 function telaDashboard() {
@@ -467,23 +438,24 @@ function telaDashboard() {
   const listaReceita = Object.entries(porPlano).sort((a, b) => b[1] - a[1]);
   const maiorReceita = listaReceita.length ? listaReceita[0][1] : 0;
 
-  /* Ranking — nunca é afetado pelo filtro: existe para comparar planos entre si.
-     Planos fora da lista padrão (sazonais, promocionais) são somados em uma
-     única barra "Outros", mesmo depois de excluídos — o histórico continua
-     contando, só o nome individual não aparece mais. */
-  const totalOutros = db.matriculas.filter((m) => m.nomePlanoSnapshot && !ehPlanoPadrao(m.nomePlanoSnapshot)).length;
+  /*
+   * Ranking 100% dinâmico (Requisito 2.5):
+   * Exibe nominalmente TODOS os planos cadastrados ou com histórico de matrículas,
+   * sem agrupamento genérico em "Outros".
+   */
   const todosOsNomes = nomesDePlano();
-  const ranking = PLANOS_PADRAO
-    .filter((nome) => todosOsNomes.some((n) => n.toLowerCase() === nome.toLowerCase()))
-    .map((nome) => ({
-      nome,
-      total: db.matriculas.filter((m) => String(m.nomePlanoSnapshot || '').toLowerCase() === nome.toLowerCase()).length
-    }))
-    .concat(totalOutros > 0 ? [{ nome: 'Outros', total: totalOutros }] : [])
+  const ranking = todosOsNomes
+    .map((nome) => {
+      const total = db.matriculas.filter(
+        (m) => String(m.nomePlanoSnapshot || '').toLowerCase() === nome.toLowerCase()
+      ).length;
+      return { nome, total };
+    })
     .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome, 'pt-BR'));
+
   const maiorRanking = ranking.length ? ranking[0].total : 0;
 
-  const opcoes = nomesDePlano()
+  const opcoes = todosOsNomes
     .map((n) => `<option value="${esc(n)}"${n === filtro ? ' selected' : ''}>${esc(n)}</option>`)
     .join('');
 
@@ -497,24 +469,24 @@ function telaDashboard() {
       </div>`).join('')}</div>`;
 
   view.innerHTML = `
-    <div class="admin-header" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; padding: 22px 26px; border-radius: 12px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.12);">
+    <div class="admin-header">
       <div>
-        <h1 style="margin: 0 0 4px 0; font-size: 1.55rem; color: #f8fafc; font-weight: 700;">Painel de Gestão Administrativa</h1>
-        <p style="margin: 0 0 8px 0; color: #cbd5e1; font-size: 0.95rem;">Matrículas, receita e inadimplência da academia.</p>
-        <div style="font-size: 0.88rem; color: #38bdf8; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+        <h1 class="admin-header-title">Painel de Gestão Administrativa</h1>
+        <p class="admin-header-desc">Matrículas, receita e inadimplência da academia.</p>
+        <div class="admin-header-date">
           <span>📅</span> <span>${formatarDataExtenso(new Date())}</span>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-        <div style="background: rgba(255,255,255,0.07); padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12);">
-          <label for="filtro-plano" style="color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 4px;">Filtrar Plano</label>
-          <select id="filtro-plano" style="background: #0f172a; color: #fff; border: 1px solid #334155; padding: 6px 12px; border-radius: 6px; font-size: 0.9rem; outline: none; cursor: pointer;">
+      <div class="admin-header-controls">
+        <div class="admin-filter-group">
+          <label for="filtro-plano" class="admin-filter-label">Filtrar Plano</label>
+          <select id="filtro-plano" class="admin-filter-select">
             <option value="">Todos os planos</option>${opcoes}
           </select>
         </div>
-        <div style="background: rgba(255,255,255,0.07); padding: 8px 18px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); text-align: center;">
-          <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Hora Atual</div>
-          <div id="relogio-admin" style="font-size: 1.35rem; font-weight: 700; color: #38bdf8; font-family: monospace; letter-spacing: 1px;">${formatarHoraTempoReal(new Date())}</div>
+        <div class="admin-clock-box">
+          <div class="admin-clock-label">Hora Atual</div>
+          <div id="relogio-admin" class="admin-clock-time">${formatarHoraTempoReal(new Date())}</div>
         </div>
       </div>
     </div>
@@ -552,16 +524,19 @@ function telaDashboard() {
       </section>
     </div>`;
 
-  $('#filtro-plano').addEventListener('change', (e) => {
-    ui.dashboard.plano = e.target.value;
-    telaDashboard();
-    const novoSelect = $('#filtro-plano');
-    if (novoSelect) novoSelect.focus();
-  });
+  const selectFiltro = $('#filtro-plano');
+  if (selectFiltro) {
+    selectFiltro.addEventListener('change', (e) => {
+      ui.dashboard.plano = e.target.value;
+      telaDashboard();
+      const novoSelect = $('#filtro-plano');
+      if (novoSelect) novoSelect.focus();
+    });
+  }
 }
 
 /* ============================================================
-   Tela: Alunos
+   7. Tela: Alunos
    ============================================================ */
 
 function telaAlunos() {
@@ -585,13 +560,17 @@ function telaAlunos() {
   const pag = paginar(lista, ui.alunos.pagina);
   ui.alunos.pagina = pag.atual;
 
+  /*
+   * Nota: A badge "Inativo" foi mantida exclusivamente na coluna "Situação",
+   * eliminando a duplicidade ao lado do nome do aluno (melhoria apontada na avaliação).
+   */
   const linhas = pag.itens.map((a) => `
     <tr>
-      <td>${esc(a.nome)} ${a.ativo === false ? chip('Inativo', 'chip-gray') : ''}</td>
+      <td>${esc(a.nome)}</td>
       <td>${esc(a.cpf)}</td>
       <td>${esc(a.telefone)}</td>
       <td>${formatarData(a.dataNascimento)}</td>
-      <td>${a.ativo === false ? chip('inativo', 'chip-gray') : chip('ativo', 'chip-blue')}</td>
+      <td>${a.ativo === false ? chip('Inativo', 'chip-gray') : chip('Ativo', 'chip-blue')}</td>
       <td class="acts">
         <div class="row-actions">
           <a class="btn btn-ghost btn-sm" href="#/alunos/${a.id}/editar">Editar</a>
@@ -629,10 +608,10 @@ function telaAlunos() {
     '<a class="btn btn-solid" href="#/alunos/novo">Cadastrar aluno</a>')
     }
   <section class="card">
-    <div class="card-head" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+    <div class="card-head">
       <h2>Todos os alunos</h2>
-      <div style="display: flex; gap: 8px; align-items: center; margin-left: auto;">
-        <select id="tipo-busca-alunos" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; background: #fff;">
+      <div class="filter-search-group">
+        <select id="tipo-busca-alunos" class="search-select">
           <option value="todos" ${campoFiltro === 'todos' ? ' selected' : ''}>Todos os campos</option>
           <option value="nome" ${campoFiltro === 'nome' ? ' selected' : ''}>Nome</option>
           <option value="cpf" ${campoFiltro === 'cpf' ? ' selected' : ''}>CPF</option>
@@ -708,8 +687,8 @@ function telaAlunoForm(id) {
 
   const campoCPF = view.querySelector('[name="cpf"]');
   const campoTel = view.querySelector('[name="telefone"]');
-  campoCPF.addEventListener('input', () => { campoCPF.value = mascaraCPF(campoCPF.value); });
-  campoTel.addEventListener('input', () => { campoTel.value = mascaraTelefone(campoTel.value); });
+  if (campoCPF) campoCPF.addEventListener('input', () => { campoCPF.value = mascaraCPF(campoCPF.value); });
+  if (campoTel) campoTel.addEventListener('input', () => { campoTel.value = mascaraTelefone(campoTel.value); });
 
   $('#form-aluno').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -757,7 +736,7 @@ function validarAluno(d, idAtual) {
 }
 
 /* ============================================================
-   Tela: Planos
+   8. Tela: Planos
    ============================================================ */
 
 function telaPlanos() {
@@ -849,7 +828,7 @@ function telaPlanoForm(id) {
 }
 
 /* ============================================================
-   Tela: Matrículas
+   9. Tela: Matrículas
    ============================================================ */
 
 function telaMatriculas() {
@@ -861,11 +840,21 @@ function telaMatriculas() {
   const pag = paginar(lista, ui.matriculas.pagina);
   ui.matriculas.pagina = pag.atual;
 
+  /*
+   * Requisito 5.4: O botão "Editar" está disponível EXCLUSIVAMENTE para status "ativa".
+   * Matrículas trancadas exibem apenas "Reativar" e "Cancelar".
+   * Matrículas canceladas são somente leitura.
+   */
   const acoes = (m) => {
     if (m.status === 'cancelada') return '<span class="muted">Somente leitura</span>';
-    const botoes = [`<a class="btn btn-ghost btn-sm" href="#/matriculas/${m.id}/editar">Editar</a>`];
-    if (m.status === 'ativa') botoes.push(`<button class="btn btn-ghost btn-sm" data-acao="trancar" data-id="${m.id}">Trancar</button>`);
-    if (m.status === 'trancada') botoes.push(`<button class="btn btn-ghost btn-sm" data-acao="reativar-matricula" data-id="${m.id}">Reativar</button>`);
+    const botoes = [];
+    if (m.status === 'ativa') {
+      botoes.push(`<a class="btn btn-ghost btn-sm" href="#/matriculas/${m.id}/editar">Editar</a>`);
+      botoes.push(`<button class="btn btn-ghost btn-sm" data-acao="trancar" data-id="${m.id}">Trancar</button>`);
+    }
+    if (m.status === 'trancada') {
+      botoes.push(`<button class="btn btn-ghost btn-sm" data-acao="reativar-matricula" data-id="${m.id}">Reativar</button>`);
+    }
     botoes.push(`<button class="btn btn-ghost btn-sm" data-acao="cancelar-matricula" data-id="${m.id}">Cancelar</button>`);
     return `<div class="row-actions">${botoes.join('')}</div>`;
   };
@@ -911,8 +900,10 @@ function telaMatriculas() {
       ui.matriculas.pagina = 1;
       telaMatriculas();
       const novo = $('#busca-matriculas');
-      novo.focus();
-      novo.setSelectionRange(novo.value.length, novo.value.length);
+      if (novo) {
+        novo.focus();
+        novo.setSelectionRange(novo.value.length, novo.value.length);
+      }
     }, 300));
   }
 }
@@ -920,9 +911,9 @@ function telaMatriculas() {
 function telaMatriculaForm(id) {
   const matricula = id ? matriculaDe(id) : null;
   if (id && !matricula) return irPara('#/matriculas');
-  if (matricula && matricula.status === 'cancelada') return irPara('#/matriculas');
+  if (matricula && matricula.status !== 'ativa') return irPara('#/matriculas');
 
-  /* Edição: permite alterar data de início e o plano (apenas se pagamentos estiverem em dia) */
+  /* Edição */
   if (matricula) {
     const pagamentosMatricula = db.pagamentos.filter((p) => same(p.matriculaId, matricula.id));
     const temAtraso = pagamentosMatricula.some((p) => statusPagamento(p) === 'atrasado');
@@ -943,11 +934,13 @@ function telaMatriculaForm(id) {
       <div class="banner ${emDia ? 'is-info' : 'is-warning'}">
         Aluno: <strong>${esc(alunoDaMatricula(matricula)?.nome || 'Aluno removido')}</strong> ·
         Plano atual: <strong>${esc(matricula.nomePlanoSnapshot)}</strong> (${formatarMoeda(matricula.valorMensalSnapshot)}/mês)
-        ${!emDia ? '<br><span style="color:#c0392b; font-weight:bold;">⚠️ Pagamento em atraso detectado: quite as pendências para alterar o plano.</span>' : ''}
+        ${!emDia ? '<br><span class="banner-warning-text">⚠️ Pagamento em atraso detectado: quite as pendências para alterar o plano.</span>' : ''}
       </div>
 
       <div class="field">
-        <label for="f-planoId">Plano</label>
+        <label for="f-planoId">
+          Plano <span class="required-asterisk" aria-hidden="true">*</span>
+        </label>
         <select id="f-planoId" name="planoId" ${!emDia ? 'disabled' : ''}>
           <option value="">Selecione o plano</option>${opcoesPlano}
         </select>
@@ -1003,7 +996,7 @@ function telaMatriculaForm(id) {
     return;
   }
 
-  /* Criação */
+  /* Criação de Matrícula */
   const ativos = db.alunos.filter((a) => a.ativo !== false);
   const bloqueio = !ativos.length ? MSG.semAlunoAtivo : !db.planos.length ? MSG.semPlano : '';
 
@@ -1028,7 +1021,9 @@ function telaMatriculaForm(id) {
   <section class="card">
     <form class="form" id="form-matricula" novalidate>
       <div class="field">
-        <label for="f-alunoId">Aluno</label>
+        <label for="f-alunoId">
+          Aluno <span class="required-asterisk" aria-hidden="true">*</span>
+        </label>
         <select id="f-alunoId" name="alunoId">
           <option value="">Selecione o aluno</option>${opcoesAluno}
         </select>
@@ -1036,7 +1031,9 @@ function telaMatriculaForm(id) {
         <span class="err" data-erro="alunoId"></span>
       </div>
       <div class="field">
-        <label for="f-planoId">Plano</label>
+        <label for="f-planoId">
+          Plano <span class="required-asterisk" aria-hidden="true">*</span>
+        </label>
         <select id="f-planoId" name="planoId">
           <option value="">Selecione o plano</option>${opcoesPlano}
         </select>
@@ -1044,7 +1041,7 @@ function telaMatriculaForm(id) {
         <span class="err" data-erro="planoId"></span>
       </div>
       ${campo('dataInicio', 'Data de início', 'date', hojeISO(), `min="${hojeISO()}"`,
-    'O primeiro pagamento vence no dia 01 do mês seguinte.')}
+    'O primeiro pagamento vence 1 mês após a data de início.')}
       <div class="form-actions">
         <button type="submit" class="btn btn-solid">Matricular</button>
         <a class="btn btn-ghost" href="#/matriculas">Voltar</a>
@@ -1079,12 +1076,17 @@ function telaMatriculaForm(id) {
           status: 'ativa'
         })
       });
+
+      /*
+       * Requisito 5.15: O primeiro pagamento vence exatamente 1 mês após a data de início,
+       * preservando o dia do mês (via somarMeses(dataInicio, 1)).
+       */
       await req('/pagamentos', {
         method: 'POST',
         body: JSON.stringify({
           matriculaId: nova.id,
           valor: Number(plano.valorMensal),
-          dataVencimento: primeiroDiaMesSeguinte(dataInicio),
+          dataVencimento: somarMeses(dataInicio, 1),
           dataPagamento: null,
           status: 'pendente',
           forma: null
@@ -1099,7 +1101,7 @@ function telaMatriculaForm(id) {
 }
 
 /* ============================================================
-   Tela: Pagamentos
+   10. Tela: Pagamentos
    ============================================================ */
 
 function telaPagamentos() {
@@ -1166,14 +1168,150 @@ function telaPagamentos() {
       ui.pagamentos.pagina = 1;
       telaPagamentos();
       const novo = $('#busca-pagamentos');
-      novo.focus();
-      novo.setSelectionRange(novo.value.length, novo.value.length);
+      if (novo) {
+        novo.focus();
+        novo.setSelectionRange(novo.value.length, novo.value.length);
+      }
     }, 300));
   }
 }
 
+async function registrarPagamento(id) {
+  const pagamento = db.pagamentos.find((p) => same(p.id, id));
+  if (!pagamento || pagamento.status === 'pago') return;
+
+  const matricula = matriculaDe(pagamento.matriculaId);
+  const aluno = alunoDaMatricula(matricula);
+  const planoNome = matricula?.nomePlanoSnapshot || 'Plano';
+
+  // Cálculo exato de dias de atraso e juros (0,5% por dia)
+  const hoje = hojeISO();
+  let diasAtraso = 0;
+  if (pagamento.dataVencimento && pagamento.dataVencimento < hoje) {
+    const [vA, vM, vD] = pagamento.dataVencimento.split('-').map(Number);
+    const [hA, hM, hD] = hoje.split('-').map(Number);
+    const dtVenc = Date.UTC(vA, vM - 1, vD);
+    const dtHoje = Date.UTC(hA, hM - 1, hD);
+    const msPorDia = 1000 * 60 * 60 * 24;
+    diasAtraso = Math.max(0, Math.round((dtHoje - dtVenc) / msPorDia));
+  }
+
+  const valorOriginal = Number(pagamento.valor || 0);
+  const percentualJuros = 0.005; // 0,5% por dia de atraso
+  const valorJuros = diasAtraso > 0 ? Number((valorOriginal * percentualJuros * diasAtraso).toFixed(2)) : 0;
+  const valorTotal = Number((valorOriginal + valorJuros).toFixed(2));
+
+  const opcoes = FORMAS.map((f) => `<option value="${f}">${f}</option>`).join('');
+  const corpo = `
+    <div class="payment-modal-info">
+      <p><strong>Aluno:</strong> ${esc(aluno?.nome || 'Aluno removido')}</p>
+      <p><strong>Plano:</strong> ${esc(planoNome)}</p>
+      <p><strong>Vencimento:</strong> ${formatarData(pagamento.dataVencimento)}</p>
+      <p><strong>Valor original:</strong> ${formatarMoeda(valorOriginal)}</p>
+      ${diasAtraso > 0 ? `
+        <p class="payment-late-warning">
+          ⚠️ Mensalidade em atraso: ${diasAtraso} dia${diasAtraso === 1 ? '' : 's'} (0,5% de acréscimo por dia)
+        </p>
+        <p class="payment-late-interest"><strong>Juros/Multa (${diasAtraso} x 0,5%):</strong> +${formatarMoeda(valorJuros)}</p>
+        <p class="payment-total-amount">
+          Valor Total a Pagar: ${formatarMoeda(valorTotal)}
+        </p>
+      ` : `
+        <p class="payment-total-amount">
+          Valor Total a Pagar: ${formatarMoeda(valorTotal)}
+        </p>
+      `}
+    </div>
+    <div class="field">
+      <label for="modal-forma">Forma de pagamento <span class="required-asterisk" aria-hidden="true">*</span></label>
+      <select id="modal-forma">
+        <option value="">Selecione a forma</option>${opcoes}
+      </select>
+      <span class="err" id="modal-forma-erro"></span>
+    </div>`;
+
+  const forma = await abrirModal({
+    titulo: 'Registrar pagamento',
+    corpo,
+    rotulo: 'Confirmar pagamento',
+    validar: () => {
+      const select = $('#modal-forma');
+      if (!select.value) {
+        const erroEl = $('#modal-forma-erro');
+        if (erroEl) erroEl.textContent = 'Selecione a forma de pagamento.';
+        select.setAttribute('aria-invalid', 'true');
+        select.focus();
+        return null;
+      }
+      return select.value;
+    }
+  });
+  if (!forma) return;
+
+  try {
+    await req(`/pagamentos/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'pago', dataPagamento: hoje, valor: valorTotal, forma })
+    });
+
+    let proximoVencimento = null;
+    /* Próxima cobrança: só para matrícula ativa ou trancada. Valor vem do snapshot. */
+    if (matricula && (matricula.status === 'ativa' || matricula.status === 'trancada')) {
+      proximoVencimento = somarMeses(pagamento.dataVencimento, 1);
+      await req('/pagamentos', {
+        method: 'POST',
+        body: JSON.stringify({
+          matriculaId: matricula.id,
+          valor: Number(matricula.valorMensalSnapshot),
+          dataVencimento: proximoVencimento,
+          dataPagamento: null,
+          status: 'pendente',
+          forma: null
+        })
+      });
+    }
+
+    await recarregar();
+
+    // RESUMO COMPLETO DE CONFIRMAÇÃO DE PAGAMENTO
+    const corpoResumo = `
+      <div class="payment-receipt-box">
+        <h3 class="payment-receipt-title">✅ Comprovante de Pagamento Quitado</h3>
+        <p><strong>Aluno:</strong> ${esc(aluno?.nome || 'Aluno')}</p>
+        <p><strong>CPF:</strong> ${esc(aluno?.cpf || '—')}</p>
+        <p><strong>Plano:</strong> ${esc(planoNome)}</p>
+        <hr class="payment-receipt-hr">
+        <p><strong>Data de Vencimento:</strong> ${formatarData(pagamento.dataVencimento)}</p>
+        <p><strong>Data de Pagamento:</strong> ${formatarData(hoje)}</p>
+        <p><strong>Forma de Pagamento:</strong> ${esc(forma)}</p>
+        <hr class="payment-receipt-hr">
+        <p><strong>Valor Parcela:</strong> ${formatarMoeda(valorOriginal)}</p>
+        ${diasAtraso > 0 ? `
+          <p class="payment-receipt-late"><strong>Atraso (${diasAtraso} dia${diasAtraso === 1 ? '' : 's'} x 0,5%):</strong> +${formatarMoeda(valorJuros)}</p>
+        ` : '<p class="payment-receipt-ontime"><strong>Situação:</strong> Pagamento em dia (0% de acréscimo)</p>'}
+        <p class="payment-receipt-total">
+          TOTAL PAGO: ${formatarMoeda(valorTotal)}
+        </p>
+        ${proximoVencimento ? `
+          <div class="payment-receipt-next">
+            <strong>Próxima cobrança:</strong> Vencimento gerado para <strong>${formatarData(proximoVencimento)}</strong>.
+          </div>
+        ` : ''}
+      </div>`;
+
+    await abrirModal({
+      titulo: 'Resumo da Confirmação de Pagamento',
+      corpo: corpoResumo,
+      rotulo: 'Concluir'
+    });
+
+  } catch {
+    avisar(MSG.erroSalvar, true);
+  }
+}
+
 /* ============================================================
-   Ações
+   11. Ações Globais
    ============================================================ */
 
 async function alternarAluno(id, reativar) {
@@ -1245,141 +1383,8 @@ async function mudarStatusMatricula(id, novoStatus) {
   }
 }
 
-async function registrarPagamento(id) {
-  const pagamento = db.pagamentos.find((p) => same(p.id, id));
-  if (!pagamento || pagamento.status === 'pago') return;
-
-  const matricula = matriculaDe(pagamento.matriculaId);
-  const aluno = alunoDaMatricula(matricula);
-  const planoNome = matricula?.nomePlanoSnapshot || 'Plano';
-
-  // Cálculo exato de dias de atraso e juros (0,5% por dia de atraso) sem interferência de fuso horário
-  const hoje = hojeISO();
-  let diasAtraso = 0;
-  if (pagamento.dataVencimento && pagamento.dataVencimento < hoje) {
-    const [vA, vM, vD] = pagamento.dataVencimento.split('-').map(Number);
-    const [hA, hM, hD] = hoje.split('-').map(Number);
-    const dtVenc = Date.UTC(vA, vM - 1, vD);
-    const dtHoje = Date.UTC(hA, hM - 1, hD);
-    const msPorDia = 1000 * 60 * 60 * 24;
-    diasAtraso = Math.max(0, Math.round((dtHoje - dtVenc) / msPorDia));
-  }
-
-  const valorOriginal = Number(pagamento.valor || 0);
-  const percentualJuros = 0.005; // 0,5% por dia de atraso
-  const valorJuros = diasAtraso > 0 ? Number((valorOriginal * percentualJuros * diasAtraso).toFixed(2)) : 0;
-  const valorTotal = Number((valorOriginal + valorJuros).toFixed(2));
-
-  const opcoes = FORMAS.map((f) => `<option value="${f}">${f}</option>`).join('');
-  const corpo = `
-    <div style="margin-bottom: 15px; font-size: 0.95rem; line-height: 1.5;">
-      <p><strong>Aluno:</strong> ${esc(aluno?.nome || 'Aluno removido')}</p>
-      <p><strong>Plano:</strong> ${esc(planoNome)}</p>
-      <p><strong>Vencimento:</strong> ${formatarData(pagamento.dataVencimento)}</p>
-      <p><strong>Valor original:</strong> ${formatarMoeda(valorOriginal)}</p>
-      ${diasAtraso > 0 ? `
-        <p style="color: #c0392b; font-weight: bold; margin-top: 8px;">
-          ⚠️ Mensalidade em atraso: ${diasAtraso} dia${diasAtraso === 1 ? '' : 's'} (0,5% de acréscimo por dia)
-        </p>
-        <p style="color: #c0392b;"><strong>Juros/Multa (${diasAtraso} x 0,5%):</strong> +${formatarMoeda(valorJuros)}</p>
-        <p style="font-size: 1.1rem; color: #27ae60; font-weight: bold; margin-top: 4px;">
-          Valor Total a Pagar: ${formatarMoeda(valorTotal)}
-        </p>
-      ` : `
-        <p style="font-size: 1.05rem; color: #27ae60; font-weight: bold; margin-top: 8px;">
-          Valor Total a Pagar: ${formatarMoeda(valorTotal)}
-        </p>
-      `}
-    </div>
-    <div class="field">
-      <label for="modal-forma">Forma de pagamento</label>
-      <select id="modal-forma">
-        <option value="">Selecione a forma</option>${opcoes}
-      </select>
-      <span class="err" id="modal-forma-erro"></span>
-    </div>`;
-
-  const forma = await abrirModal({
-    titulo: 'Registrar pagamento',
-    corpo,
-    rotulo: 'Confirmar pagamento',
-    validar: () => {
-      const select = $('#modal-forma');
-      if (!select.value) {
-        $('#modal-forma-erro').textContent = 'Selecione a forma de pagamento.';
-        select.setAttribute('aria-invalid', 'true');
-        select.focus();
-        return null;
-      }
-      return select.value;
-    }
-  });
-  if (!forma) return;
-
-  try {
-    await req(`/pagamentos/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: 'pago', dataPagamento: hoje, valor: valorTotal, forma })
-    });
-
-    let proximoVencimento = null;
-    /* Próxima cobrança: só para matrícula ativa ou trancada. Valor vem do snapshot. */
-    if (matricula && (matricula.status === 'ativa' || matricula.status === 'trancada')) {
-      proximoVencimento = somarMeses(pagamento.dataVencimento, 1);
-      await req('/pagamentos', {
-        method: 'POST',
-        body: JSON.stringify({
-          matriculaId: matricula.id,
-          valor: Number(matricula.valorMensalSnapshot),
-          dataVencimento: proximoVencimento,
-          dataPagamento: null,
-          status: 'pendente',
-          forma: null
-        })
-      });
-    }
-
-    await recarregar();
-
-    // RESUMO COMPLETO DE CONFIRMAÇÃO DE PAGAMENTO
-    const corpoResumo = `
-      <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 16px; line-height: 1.6;">
-        <h3 style="color: #27ae60; margin-top: 0; margin-bottom: 12px; font-size: 1.1rem;">✅ Comprovante de Pagamento Quitados</h3>
-        <p><strong>Aluno:</strong> ${esc(aluno?.nome || 'Aluno')}</p>
-        <p><strong>CPF:</strong> ${esc(aluno?.cpf || '—')}</p>
-        <p><strong>Plano:</strong> ${esc(planoNome)}</p>
-        <hr style="border: 0; border-top: 1px solid #dee2e6; margin: 10px 0;">
-        <p><strong>Data de Vencimento:</strong> ${formatarData(pagamento.dataVencimento)}</p>
-        <p><strong>Data de Pagamento:</strong> ${formatarData(hoje)}</p>
-        <p><strong>Forma de Pagamento:</strong> ${esc(forma)}</p>
-        <hr style="border: 0; border-top: 1px solid #dee2e6; margin: 10px 0;">
-        <p><strong>Valor Parcela:</strong> ${formatarMoeda(valorOriginal)}</p>
-        ${diasAtraso > 0 ? `
-          <p style="color: #c0392b;"><strong>Atraso (${diasAtraso} dia${diasAtraso === 1 ? '' : 's'} x 0,5%):</strong> +${formatarMoeda(valorJuros)}</p>
-        ` : '<p style="color: #27ae60;"><strong>Situação:</strong> Pagamento em dia (0% de acréscimo)</p>'}
-        <p style="font-size: 1.15rem; font-weight: bold; color: #27ae60; margin-top: 8px;">
-          TOTAL PAGO: ${formatarMoeda(valorTotal)}
-        </p>
-        ${proximoVencimento ? `
-          <div style="margin-top: 12px; padding: 8px 12px; background: #e8f8f5; border-left: 4px solid #27ae60; border-radius: 4px; font-size: 0.9rem;">
-            <strong>Próxima cobrança:</strong> Vencimento gerado para <strong>${formatarData(proximoVencimento)}</strong>.
-          </div>
-        ` : ''}
-      </div>`;
-
-    await abrirModal({
-      titulo: 'Resumo da Confirmação de Pagamento',
-      corpo: corpoResumo,
-      rotulo: 'Concluir'
-    });
-
-  } catch {
-    avisar(MSG.erroSalvar, true);
-  }
-}
-
 /* ============================================================
-   Rotas
+   12. Roteamento
    ============================================================ */
 
 function irPara(hash) {
@@ -1454,7 +1459,7 @@ async function recarregar() {
 }
 
 /* ============================================================
-   Eventos globais
+   13. Eventos Globais
    ============================================================ */
 
 document.addEventListener('click', (e) => {
